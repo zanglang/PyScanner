@@ -3,11 +3,12 @@ PyScanner GUI initialization
 version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
-import gtk, gtk.glade, pygtk
+import gtk, gtk.glade, gobject, pygtk
 from core import *
 import log
 
 scanner = Scanner()
+window = None
 
 class MainWindow:
 	def __init__(self):
@@ -15,7 +16,6 @@ class MainWindow:
 		self.gladefile = "scanner.glade"
 		self.widgets = gtk.glade.XML(self.gladefile)
 		
-		#Create our dictionay and connect it
 		self.widgets.signal_autoconnect({
 			"on_btnClear_clicked" : self.btnClear_clicked,
 			"on_menuStart_activate" : self.menuStart_activate,
@@ -29,11 +29,25 @@ class MainWindow:
 		log.init(self.widgets.get_widget('txtLog'))
 		log.debug('MainWindow initialized')
 		
+		# Columns
+		treeView = self.widgets.get_widget('treeView1')
+		model = gtk.TreeStore(gobject.TYPE_PYOBJECT, gobject.TYPE_STRING)
+		treeView.set_model(model)
+		
+		#folder = { "name": 'test' }
+		#iter = model.insert_before(None, None)
+		#model.set_value(iter, 0, folder)
+		#model.set_value(iter, 1, folder["name"])
+		
+		
+		column = gtk.TreeViewColumn("SSID", gtk.CellRendererText(), text=1)
+		treeView.append_column(column)
+		
 	def btnClear_clicked(self, widget):
 		log.clear()
 	
 	def menuStart_activate(self, widget):
-		if scanner.running:
+		if not scanner.running:
 			scanner.start()
 			log.debug('start')
 		else:
@@ -59,5 +73,16 @@ class MainWindow:
 		gtk.main_quit()
 		
 def init():
-	MainWindow()
+	global window
+	window = MainWindow()
+	
+	gtk.gdk.threads_init()
+	unlock()
 	gtk.main()
+	lock()
+	
+def unlock():
+	gtk.gdk.threads_enter()
+	
+def lock():
+	gtk.gdk.threads_leave()
