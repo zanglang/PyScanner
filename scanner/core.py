@@ -4,12 +4,12 @@ version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
 import os, re, signal, socket, subprocess, time, threading
-import gui, kismet, log
-try:
-	import gpsbt
-	GPS = True
-except ImportError:
-	GPS = False
+import config, gui, kismet, log
+#try:
+	#import gpsbt
+	#config.EnableGPS = True
+#except ImportError:
+#	config.EnableGPS = False
 
 pattern = re.compile('\*(.*): (.*)')
 networks = {}
@@ -62,7 +62,6 @@ class Kismet:
 	def response_network(self, data):
 		network = kismet.parse(kismet.NETWORK, data)
 		
-		gui.unlock()
 		model = gui.window.widgets.get_widget('treeView1').get_model()
 		bssid = network['bssid']
 		if networks.has_key(bssid):
@@ -70,6 +69,8 @@ class Kismet:
 		else:
 			iter = model.insert_before(None, None)
 			networks[bssid] = model.get_path(iter)
+			
+		gui.unlock()
 		model.set_value(iter, 0, network)
 		model.set_value(iter, 1, network['ssid'])
 		model.set_value(iter, 2, network['type'])
@@ -83,16 +84,16 @@ class Kismet:
 	def response_card(self, data):
 		global card
 		card = kismet.parse(kismet.CARD, data)
-		message = 'Received %s packets on channel %s (%s)' % (card['packets'],
-				card['channel'], card['hopping'] == '1' and 'hopping' or 'locked')
-		
 		gui.unlock()
-		gui.window.widgets.get_widget('statusBar').push(0, message)
+		log.write_status('Received %s packets on channel %s (%s)' % (card['packets'],
+				card['channel'], card['hopping'] == '1' and 'hopping' or 'locked'))
 		gui.lock()
 		
 	def response_alert(self, data):
 		alert = kismet.parse(kismet.ALERT, data)
+		gui.unlock()
 		log.write('Alert: ' + alert['text'])
+		gui.lock()
 		
 	def response_remove(self, data):
 		print 'REMOVE ' + data
@@ -136,6 +137,12 @@ class Scanner:
 	def start(self):
 		if self.running == True:
 			return
+		
+		if config.EnableGPS:
+			self.gpscontext = gpsbt.start()
+			if self.gpscontext == None:
+				log.error('Unable to start GPS!')
+		
 		try:
 			self.kismet = Kismet()
 		except socket.error, e:
@@ -148,4 +155,6 @@ class Scanner:
 	def stop(self):
 		if self.running:
 			self.kismet.shutdown()
+			if config.EnableGPS:
+				gpsbt.stop(self.gpscontext)
 		self.running = False

@@ -29,25 +29,24 @@ def error(text):
 
 def write(text):
 	""" Write text into logging window """
-	buffer = logwindow.get_buffer()
-	gui.unlock()
-	
+	#gui.unlock()
+	buffer = logwindow.get_buffer()	
 	buffer.insert(buffer.get_end_iter(), text + '\n')
 	if buffer.get_line_count() > 200:
 		buffer.delete(buffer.get_start_iter(), buffer.get_iter_at_line (100))
 	mark = buffer.create_mark("end", buffer.get_end_iter(), False)
 	logwindow.scroll_to_mark(mark, 0.05, True, 0.0, 1.0)
-	gui.lock()
+	#gui.lock()
 
 def write_status(text):
-	gui.unlock()
+	#gui.unlock()
 	gui.window.widgets.get_widget('statusBar').push(0, text)
-	gui.lock()
+	#gui.lock()
 	
 def clear():
 	""" Clear the logging window """
-	gui.unlock()
+	#gui.unlock()
 	buffer = logwindow.get_buffer()
 	start, end = buffer.get_bounds()
 	buffer.delete(start, end)
-	gui.lock()
+	#gui.lock()

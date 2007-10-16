@@ -49,7 +49,7 @@ def parse(definitions, data, store=None):
 		if sepcount == 2:
 			buffer = datum + ' '
 		elif sepcount == 1:
-			buffer += datum
+			buffer += datum + ' '
 			if continuous:
 				continuous = False
 			else:

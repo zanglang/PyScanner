@@ -3,24 +3,34 @@ PyScanner GUI initialization
 version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
-import gtk, gtk.glade, gobject, pygtk
+import gtk, gtk.glade, gobject, pygtk, traceback
 from core import *
 import log
 try:
 	import hildon
-	HILDON = True
+	config.EnableHildon = True
 except ImportError:
-	HILDON = False
+	config.EnableHildon = False
 
 scanner = Scanner()
 window = None
 
 class MainWindow:
 	def __init__(self):
-		#Set the Glade file
+		
+		# Check for hildon bindings first
+		if config.EnableHildon:
+			#self.program = hildon.Program()
+			#self.program.__init__()
+			#self.window = hildon.Window()
+			#self.window.set_title("PyScanner")
+			#self.program.add_window(self.window)
+			pass
+		
+		# Set the Glade file
 		self.gladefile = "scanner.glade"
 		self.widgets = gtk.glade.XML(self.gladefile)
-		print type(self.widgets)
+		
 		self.widgets.signal_autoconnect({
 			"on_btnClear_clicked" : self.btnClear_clicked,
 			"on_menuStart_activate" : self.menuStart_activate,
@@ -29,7 +39,8 @@ class MainWindow:
 			"on_menuBluetooth_activate" : self.menuBluetooth_activate,
 			"on_menuWireless_activate" : self.menuWireless_activate,
 			"on_MainWindow_destroy" : self.menuQuit_activate,
-			"on_treeView_cursor_changed": self.treeView_changed
+			"on_treeView_cursor_changed": self.treeView_changed,
+			"on_menuAbout_activate" : self.menuAbout_activate,
 		})
 		# pass logging window widget to logger
 		log.init(self.widgets.get_widget('txtLog'))
@@ -49,22 +60,23 @@ class MainWindow:
 							gtk.TreeViewColumn("Type",
 							gtk.CellRendererText(), text=2))
 		treeView.append_column(
-							gtk.TreeViewColumn("Channel",
+							gtk.TreeViewColumn("Chan",
 							gtk.CellRendererText(), text=3))
 		treeView.append_column(
-							gtk.TreeViewColumn("Encrypted",
+							gtk.TreeViewColumn("WEP",
 							gtk.CellRendererText(), text=4))
 		treeView.append_column(
 							gtk.TreeViewColumn("Packets",
 							gtk.CellRendererText(), text=5))
 		
-		if HILDON:
-			menuBar = self.widgets.get_widget('menuBar')
-			newMenu = gtk.Menu()
-			for child in menuBar.get_children():
- 				child.reparent(newMenu)
- 			self.widgets.get_widget('MainWindow').set_menu(newMenu)
- 			menuBar.destroy()
+		if config.EnableHildon:
+			#menuBar = self.widgets.get_widget('menuBar')
+			#newMenu = gtk.Menu()
+			#for child in menuBar.get_children():
+ 			#	child.reparent(newMenu)
+ 			#self.program.set_common_menu(newMenu)
+ 			#menuBar.destroy()
+ 			pass
 		
 	def btnClear_clicked(self, widget):
 		log.clear()
@@ -90,6 +102,9 @@ class MainWindow:
 	
 	def menuBluetooth_activate(self, widget):
 		pass
+	
+	def menuAbout_activate(self, widget):
+		self.widgets.get_widget('AboutDialog').show()
 	
 	def treeView_changed(self, widget):
 		(model, iter) = self.widgets.get_widget('treeView1').get_selection().get_selected()
@@ -120,12 +135,18 @@ def init():
 	log.write_status('Not scanning.')
 	
 	gtk.gdk.threads_init()
-	unlock()
-	gtk.main()
-	lock()
-	
+	#unlock()
+	try:
+		gtk.main()
+	except KeyboardInterrupt:
+		window._shutdown()
+	#lock()
+
 def unlock():
+	print 'unlock'
+	traceback.print_stack()
 	gtk.gdk.threads_enter()
 	
 def lock():
+	#print 'lock'
 	gtk.gdk.threads_leave()

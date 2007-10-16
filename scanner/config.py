@@ -12,8 +12,14 @@ EnableWireless = True
 # Enable Bluetooth scanning
 EnableBluetooth = False
 
+# Enable GPS
+EnableGPS = False
+
 # Google maps database path
 MapsPath = '.gmaps.db'
 
 # GPS device address for GPSd
 GpsdAddress = '/dev/rfcomm0'
+
+# Use Hildon bindings (for Maemo)
+EnableHildon = True
