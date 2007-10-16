@@ -4,8 +4,8 @@ separator = '\001'
 
 NETWORK = (
 	'bssid', 'type', 'ssid',
-	#'beaconinfo', 'llcpackets',
-	'datapackets', 'cryptpackets', 'weakpackets', 'channel', 'wep',
+	#'beaconinfo',
+	'llcpackets', 'datapackets', 'cryptpackets', 'weakpackets', 'channel', 'wep',
 	#'firsttime', 'lasttime', 'atype', 'rangeip', 'gpsfixed',
 	#'minlat', 'minlon', 'minalt', 'minspd', 'maxlat', 'maxlon',
 	#'maxalt', 'maxspd', 'octets', 'cloaked', 'beaconrate',
@@ -24,7 +24,8 @@ INFO = (
 )
 
 ALERT = (
-	'sec','usec','header','text'
+	#'sec','usec',
+	'header','text'
 )
 
 CARD = (
@@ -38,15 +39,15 @@ GPS = (
 REMOVE = ('*')
 STATUS = ('*')
 
-def parse(definitions, data):
-	result = {}
-	index = 0		
+def parse(definitions, data, store=None):
+	result = store and store or {}
+	index = 0
 	continuous = False
 	buffer = ''
 	for datum in data.split(' '):
 		sepcount = datum.count(separator)
 		if sepcount == 2:
-			buffer = datum
+			buffer = datum + ' '
 		elif sepcount == 1:
 			buffer += datum
 			if continuous:
@@ -55,7 +56,7 @@ def parse(definitions, data):
 				continuous = True
 				continue
 		elif continuous:
-			buffer += datum
+			buffer += datum + ' '
 			continue
 		else:
 			buffer = datum

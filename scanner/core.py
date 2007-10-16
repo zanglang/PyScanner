@@ -5,48 +5,52 @@ version 0.1 - Jerry Chong <zanglang@gmail.com>
 
 import os, re, signal, socket, subprocess, time, threading
 import gui, kismet, log
+try:
+	import gpsbt
+	GPS = True
+except ImportError:
+	GPS = False
 
 pattern = re.compile('\*(.*): (.*)')
+networks = {}
+card = None
 
 class Kismet:
 	def __init__(self):
 		self.functions = {
 			'KISMET': self.response_kismet,
-			'PROTOCOLS': self.response_noop,
 			'NETWORK': self.response_network,
+			'ALERT': self.response_alert,
+			'REMOVE': self.response_remove,
+			'CARD': self.response_card,
 			## Unimplemented yet
-			'REMOVE': self.response_noop,
+			'PROTOCOLS': self.response_noop,
 			'CLIENT': self.response_noop,
-			'ALERT': self.response_noop,
-			'STATUS': self.response_noop,
-			'CARD': self.response_noop,
+			'STATUS': self.response_noop,			
 			'TIME': self.response_noop,
 			'GPS': self.response_noop,
 			'INFO': self.response_noop
 		}
 		
 		#self.process = subprocess.Popen('kismet_server')
-		#time.sleep(3)
+		#time.sleep(1)
 		
+		log.write('Started kismet server')
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.connect(('localhost', 2501))
 		self.sockfile = self.socket.makefile("rw")
-		self.command_initialize()
+		log.write('Connected to kismet server')
+		self.command_initialize()		
+		log.write_status('Connected to kismet instance')
 		
 	def loop(self):
 		global pattern
 		while self.socket:
-			#gui.unlock()
 			try:
-				line = self.readline()
-				#print line
-				match = pattern.match(line)
+				match = pattern.match(self.readline())
 				result = self.functions[match.group(1)](match.group(2))
 			except EOFError:
 				break
-			#except KeyError:
-			#	continue
-			#gui.lock()
 		
 	def response_info(self, data):
 		print data
@@ -58,13 +62,40 @@ class Kismet:
 	def response_network(self, data):
 		network = kismet.parse(kismet.NETWORK, data)
 		
-		#gui.unlock()
-		#model = gui.window.widgets.get_widget('treeView1').get_model()
-		#iter = model.insert_before(None, None)
-		#model.set_value(iter, 0, network)
-		#model.set_value(iter, 1, network.bssid)
-		#gui.lock()
-		#print network
+		gui.unlock()
+		model = gui.window.widgets.get_widget('treeView1').get_model()
+		bssid = network['bssid']
+		if networks.has_key(bssid):
+			iter = model.get_iter(networks[bssid])
+		else:
+			iter = model.insert_before(None, None)
+			networks[bssid] = model.get_path(iter)
+		model.set_value(iter, 0, network)
+		model.set_value(iter, 1, network['ssid'])
+		model.set_value(iter, 2, network['type'])
+		model.set_value(iter, 3, network['channel'])
+		model.set_value(iter, 4, network['wep'])
+		network['packets'] = int(network['llcpackets']) + int(network['datapackets']) + \
+				int(network['cryptpackets'])
+		model.set_value(iter, 5, network['packets'])
+		gui.lock()
+		
+	def response_card(self, data):
+		global card
+		card = kismet.parse(kismet.CARD, data)
+		message = 'Received %s packets on channel %s (%s)' % (card['packets'],
+				card['channel'], card['hopping'] == '1' and 'hopping' or 'locked')
+		
+		gui.unlock()
+		gui.window.widgets.get_widget('statusBar').push(0, message)
+		gui.lock()
+		
+	def response_alert(self, data):
+		alert = kismet.parse(kismet.ALERT, data)
+		log.write('Alert: ' + alert['text'])
+		
+	def response_remove(self, data):
+		print 'REMOVE ' + data
 	
 	def response_noop(self, data):
 		pass
@@ -72,11 +103,12 @@ class Kismet:
 	def command_initialize(self):
 		self.writeline('ENABLE', 'NETWORK ' + ','.join(kismet.NETWORK))
 		self.writeline('ENABLE', 'INFO ' + ','.join(kismet.INFO))
+		#self.writeline('ENABLE', 'CLIENT ' + ','.join(kismet.CLIENT))
 		self.writeline('ENABLE', 'ALERT ' + ','.join(kismet.ALERT))
 		self.writeline('ENABLE', 'CARD ' + ','.join(kismet.CARD))
 		self.writeline('ENABLE', 'GPS ' + ','.join(kismet.GPS))
 		self.writeline('ENABLE', 'REMOVE ' + ','.join(kismet.REMOVE))
-		self.writeline('ENABLE', 'STATUS ' + ','.join(kismet.STATUS))
+		#self.writeline('ENABLE', 'STATUS ' + ','.join(kismet.STATUS))
 	
 	def readline(self):
 		str = self.sockfile.readline()
@@ -108,7 +140,6 @@ class Scanner:
 			self.kismet = Kismet()
 		except socket.error, e:
 			log.error('Cannot connect to Kismet')
-			print 
 			return
 		self.running = True
 		thread = threading.Thread(target=self.kismet.loop)
