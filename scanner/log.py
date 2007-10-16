@@ -3,6 +3,7 @@ PyScanner core
 version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
+import traceback
 import config, gui, logging
 
 if config.LogDebug:
@@ -20,6 +21,11 @@ def shutdown():
 def debug(text):
 	""" Write a debug level text """
 	write('DEBUG: ' + text)
+	
+def error(text):
+	""" Write error level text """
+	write('Error: ' + text)
+	write(traceback.format_exc())
 
 def write(text):
 	""" Write text into logging window """

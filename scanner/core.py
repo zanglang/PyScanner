@@ -4,7 +4,7 @@ version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
 import os, re, signal, socket, subprocess, time, threading
-import gui, kismet
+import gui, kismet, log
 
 pattern = re.compile('\*(.*): (.*)')
 
@@ -56,7 +56,7 @@ class Kismet:
 		print data
 		
 	def response_network(self, data):
-		network = kismet.Network.parse(data)
+		network = kismet.parse(kismet.NETWORK, data)
 		
 		#gui.unlock()
 		#model = gui.window.widgets.get_widget('treeView1').get_model()
@@ -70,29 +70,13 @@ class Kismet:
 		pass
 	
 	def command_initialize(self):
-		self.writeline('ENABLE', 'GPS lat,lon,alt,spd,heading,fix')
-		self.writeline('ENABLE', 'INFO networks,packets,crypt,weak,noise,' +
-					'dropped,rate,signal')
-		self.writeline('ENABLE', 'REMOVE *')
-		self.writeline('ENABLE', 'NETWORK bssid,type,ssid,beaconinfo,' +
-					'llcpackets,datapackets,cryptpackets,weakpackets,channel,' +
-					'wep,firsttime,lasttime,atype,rangeip,gpsfixed,minlat,' +
-					'minlon,minalt,minspd,maxlat,maxlon,maxalt,maxspd,octets,' +
-					'cloaked,beaconrate,maxrate,quality,signal,noise,' +
-					'bestquality,bestsignal,bestnoise,bestlat,bestlon,bestalt,' +
-					'agglat,agglon,aggalt,aggpoints,datasize,turbocellnid,' +
-					'turbocellmode,turbocellsat,carrierset,maxseenrate,' +
-					'encodingset,decrypted,dupeivpackets,bsstimestamp')
-		self.writeline('ENABLE', 'CLIENT bssid,mac,type,firsttime,lasttime,' +
-					'datapackets,cryptpackets,weakpackets,gpsfixed,minlat,' +
-					'minlon,minalt,minspd,maxlat,maxlon,maxalt,maxspd,agglat,' +
-					'agglon,aggalt,aggpoints,maxrate,quality,signal,noise,' +
-					'bestquality,bestsignal,bestnoise,bestlat,bestlon,bestalt,' +
-					'atype,ip,datasize,maxseenrate,encodingset,decrypted,wep')
-		self.writeline('ENABLE', 'ALERT sec,usec,header,text')
-		self.writeline('ENABLE', 'STATUS *')
-		self.writeline('ENABLE', 'CARD interface,type,channel,id,' +
-					'packets,hopping')
+		self.writeline('ENABLE', 'NETWORK ' + ','.join(kismet.NETWORK))
+		self.writeline('ENABLE', 'INFO ' + ','.join(kismet.INFO))
+		self.writeline('ENABLE', 'ALERT ' + ','.join(kismet.ALERT))
+		self.writeline('ENABLE', 'CARD ' + ','.join(kismet.CARD))
+		self.writeline('ENABLE', 'GPS ' + ','.join(kismet.GPS))
+		self.writeline('ENABLE', 'REMOVE ' + ','.join(kismet.REMOVE))
+		self.writeline('ENABLE', 'STATUS ' + ','.join(kismet.STATUS))
 	
 	def readline(self):
 		str = self.sockfile.readline()
@@ -120,8 +104,13 @@ class Scanner:
 	def start(self):
 		if self.running == True:
 			return
+		try:
+			self.kismet = Kismet()
+		except socket.error, e:
+			log.error('Cannot connect to Kismet')
+			print 
+			return
 		self.running = True
-		self.kismet = Kismet()
 		thread = threading.Thread(target=self.kismet.loop)
 		thread.start()
 	
