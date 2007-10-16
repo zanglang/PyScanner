@@ -5,11 +5,11 @@ version 0.1 - Jerry Chong <zanglang@gmail.com>
 
 import os, re, signal, socket, subprocess, time, threading
 import config, gui, kismet, log
-#try:
-	#import gpsbt
-	#config.EnableGPS = True
-#except ImportError:
-#	config.EnableGPS = False
+try:
+	import gpsbt
+	config.EnableGPS = True
+except ImportError:
+	config.EnableGPS = False
 
 pattern = re.compile('\*(.*): (.*)')
 networks = {}
@@ -23,7 +23,7 @@ class Kismet:
 			'ALERT': self.response_alert,
 			'REMOVE': self.response_remove,
 			'CARD': self.response_card,
-			## Unimplemented yet
+			## Unimplemented yet/uninteresting
 			'PROTOCOLS': self.response_noop,
 			'CLIENT': self.response_noop,
 			'STATUS': self.response_noop,			
@@ -46,12 +46,14 @@ class Kismet:
 		
 	def loop(self):
 		global pattern
-		while self.socket:
+		while True:
 			try:
 				match = pattern.match(self.readline())
 				result = self.functions[match.group(1)](match.group(2))
 			except EOFError:
 				break
+			except:
+				log.error('Socket error')
 		
 	def response_info(self, data):
 		print data
@@ -127,8 +129,11 @@ class Kismet:
 		
 	def shutdown(self):
 		self.socket.close()
-		self.socket = None
-		#os.kill(self.process.pid, signal.SIGHUP)
+		try:
+			#os.kill(self.process.pid, signal.SIGHUP)
+			pass
+		except OSError, e:
+			log.error('Error shutting down kismet_server')
 
 class Scanner:
 	def __init__(self):
