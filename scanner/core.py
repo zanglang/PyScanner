@@ -33,7 +33,8 @@ class Kismet:
 		}
 		
 		#self.process = subprocess.Popen('kismet_server')
-		#time.sleep(1)
+		#time.sleep(5)
+		#TODO: add progress bar
 		
 		log.write('Started kismet server')
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -127,7 +128,7 @@ class Kismet:
 	def shutdown(self):
 		self.socket.close()
 		self.socket = None
-		#os.kill(self.kismet.pid, signal.SIGHUP)
+		#os.kill(self.process.pid, signal.SIGHUP)
 
 class Scanner:
 	def __init__(self):

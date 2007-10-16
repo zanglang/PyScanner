@@ -143,8 +143,8 @@ def init():
 	#lock()
 
 def unlock():
-	print 'unlock'
-	traceback.print_stack()
+	#print 'unlock'
+	#traceback.print_stack()
 	gtk.gdk.threads_enter()
 	
 def lock():
