@@ -20,6 +20,8 @@ def shutdown():
 
 def debug(text):
 	""" Write a debug level text """
+	if not config.LogDebug:
+		return
 	write('DEBUG: ' + text)
 	
 def error(text):
@@ -29,6 +31,8 @@ def error(text):
 
 def write(text):
 	""" Write text into logging window """
+	if not config.EnableLogging:
+		return
 	#gui.unlock()
 	buffer = logwindow.get_buffer()	
 	buffer.insert(buffer.get_end_iter(), text + '\n')

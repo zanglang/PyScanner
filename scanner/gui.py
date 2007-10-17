@@ -35,16 +35,30 @@ class MainWindow:
 			"on_btnClear_clicked" : self.btnClear_clicked,
 			"on_menuStart_activate" : self.menuStart_activate,
 			"on_menuQuit_activate" : self.menuQuit_activate,
-			"on_chkLogging_toggled" : self.chkLogging_activated,
-			"on_menuBluetooth_activate" : self.menuBluetooth_activate,
-			"on_menuWireless_activate" : self.menuWireless_activate,
+			"on_menuLogging_activate" : self.chkLogging_toggled,
+			"on_chkLogging_toggled" : self.chkLogging_toggled,
+			"on_menuWireless_activate" : self.chkWireless_toggled,
+			"on_chkWireless_toggled" : self.chkWireless_toggled,
+			"on_menuBluetooth_activate" : self.chkBluetooth_toggled,			
+			"on_chkBluetooth_toggled" : self.chkBluetooth_toggled,			
+			"on_menuAnalyze_activate" : self.menuAnalyze_activate,
 			"on_MainWindow_destroy" : self.menuQuit_activate,
 			"on_treeView_cursor_changed": self.treeView_changed,
+			"on_treeView_button_press_event": self.treeView_clicked,
 			"on_menuAbout_activate" : self.menuAbout_activate,
 		})
+		
 		# pass logging window widget to logger
 		log.init(self.widgets.get_widget('txtLog'))
 		log.debug('MainWindow initialized')
+		
+		# set up preferences
+		self.widgets.get_widget('menuLogging').set_active(config.EnableLogging)
+		self.widgets.get_widget('chkLogging').set_active(config.EnableLogging)
+		self.widgets.get_widget('menuWireless').set_active(config.EnableWireless)
+		self.widgets.get_widget('chkWireless').set_active(config.EnableWireless)
+		self.widgets.get_widget('menuBluetooth').set_active(config.EnableBluetooth)
+		self.widgets.get_widget('chkBluetooth').set_active(config.EnableBluetooth)		
 		
 		# Columns
 		treeView = self.widgets.get_widget('treeView1')
@@ -94,13 +108,28 @@ class MainWindow:
 	def menuQuit_activate(self, widget):
 		self._shutdown()
 		
-	def chkLogging_activated(self, widget):
-		pass
+	def chkLogging_toggled(self, widget):
+		enable = widget.get_active()
+		log.write('Logging is %s.' % (enable and 'enabled' or 'disabled'))
+		config.EnableLogging = widget.get_active()
+		self.widgets.get_widget('menuLogging').set_active(config.EnableLogging)
+		self.widgets.get_widget('chkLogging').set_active(config.EnableLogging)
 	
-	def menuWireless_activate(self, widget):
-		pass
+	def chkWireless_toggled(self, widget):
+		enable = widget.get_active()
+		log.write('Wireless is %s.' % (enable and 'enabled' or 'disabled'))
+		config.EnableWireless = widget.get_active()
+		self.widgets.get_widget('menuWireless').set_active(config.EnableWireless)
+		self.widgets.get_widget('chkWireless').set_active(config.EnableWireless)
 	
-	def menuBluetooth_activate(self, widget):
+	def chkBluetooth_toggled(self, widget):
+		enable = widget.get_active()
+		log.write('Bluetooth is %s.' % (enable and 'enabled' or 'disabled'))
+		config.EnableBluetooth = widget.get_active()
+		self.widgets.get_widget('menuBluetooth').set_active(config.EnableBluetooth)
+		self.widgets.get_widget('chkBluetooth').set_active(config.EnableBluetooth)
+	
+	def menuAnalyze_activate(self, widget):
 		pass
 	
 	def menuAbout_activate(self, widget):
@@ -114,7 +143,10 @@ class MainWindow:
 		self.widgets.get_widget('lblSSID').set_text(network['ssid'])
 		self.widgets.get_widget('lblMac').set_text(network['bssid'])
 		self.widgets.get_widget('lblChannel').set_text(network['channel'])
-		self.widgets.get_widget('lblEncrypt').set_text(network['wep'])
+		self.widgets.get_widget('lblType').set_text(network['typestr'])
+		self.widgets.get_widget('lblEncrypt').set_text(network['wepstr'])
+		self.widgets.get_widget('lblCloaked').set_text(network['cloaked'] == '1'
+													and 'Yes' or 'No')
 		self.widgets.get_widget('lblPackets').set_text(str(network['packets']))
 		self.widgets.get_widget('lblData').set_text(network['datapackets'])
 		self.widgets.get_widget('lblLLC').set_text(network['llcpackets'])
@@ -122,6 +154,11 @@ class MainWindow:
 		self.widgets.get_widget('lblWeak').set_text(network['weakpackets'])
 		self.widgets.get_widget('lblDupe').set_text(network['dupeivpackets'])
 		self.widgets.get_widget('lblDecrypted').set_text(network['decrypted'])
+		
+	def treeView_clicked(self, widget, event):
+		if (event.button == 3):
+			self.widgets.get_widget('PopupMenu').popup( None, None, None,
+													event.button, event.time)
 	
 	def _shutdown(self):
 		""" Shutdown scanner """
@@ -135,12 +172,12 @@ def init():
 	log.write_status('Not scanning.')
 	
 	gtk.gdk.threads_init()
-	#unlock()
+	unlock()
 	try:
 		gtk.main()
 	except KeyboardInterrupt:
 		window._shutdown()
-	#lock()
+	lock()
 
 def unlock():
 	#print 'unlock'

@@ -3,7 +3,7 @@ PyScanner core
 version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
-import os, re, signal, socket, subprocess, time, threading
+import os, re, signal, socket, subprocess, sys, time, threading
 import config, gui, kismet, log
 try:
 	import gpsbt
@@ -32,9 +32,14 @@ class Kismet:
 			'INFO': self.response_noop
 		}
 		
-		#self.process = subprocess.Popen('kismet_server')
-		#time.sleep(5)
-		#TODO: add progress bar
+		self.run_flag = True
+		# Check if we need to spawn kismet server
+		if config.ExecuteKismet and sys.platform != 'win32': 
+			self.process = subprocess.Popen('kismet_server')
+			time.sleep(5)
+			# TODO: add progress bar
+		else:
+			self.process = None
 		
 		log.write('Started kismet server')
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,14 +51,18 @@ class Kismet:
 		
 	def loop(self):
 		global pattern
-		while True:
+		while self.run_flag:
 			try:
 				match = pattern.match(self.readline())
 				result = self.functions[match.group(1)](match.group(2))
 			except EOFError:
 				break
-			except:
+			except Exception, e:
+				print type(e), e
+				gui.unlock()
 				log.error('Socket error')
+				gui.lock()
+				break
 		
 	def response_info(self, data):
 		print data
@@ -76,9 +85,18 @@ class Kismet:
 		gui.unlock()
 		model.set_value(iter, 0, network)
 		model.set_value(iter, 1, network['ssid'])
-		model.set_value(iter, 2, network['type'])
+		# Network type
+		network['typestr'] = kismet.NETWORK_TYPE.get(network['type'], '?')
+		model.set_value(iter, 2, network['typestr'])
 		model.set_value(iter, 3, network['channel'])
-		model.set_value(iter, 4, network['wep'])
+		# WEP
+		try:
+			code = int(network['wep'])
+		except ValueError:
+			code = 0
+		network['wepstr'] = kismet.parse_wep(code)
+		model.set_value(iter, 4, code > 0 and 'Y' or 'N')
+		# number of packets
 		network['packets'] = int(network['llcpackets']) + int(network['datapackets']) + \
 				int(network['cryptpackets'])
 		model.set_value(iter, 5, network['packets'])
@@ -96,6 +114,7 @@ class Kismet:
 		alert = kismet.parse(kismet.ALERT, data)
 		gui.unlock()
 		log.write('Alert: ' + alert['text'])
+		log.write_status('Alert: ' + alert['text'])
 		gui.lock()
 		
 	def response_remove(self, data):
@@ -128,12 +147,14 @@ class Kismet:
 		self.socket.send('!0 ' + command + ' ' + options + '\r\n')
 		
 	def shutdown(self):
+		self.sockfile.close()
 		self.socket.close()
-		try:
-			#os.kill(self.process.pid, signal.SIGHUP)
-			pass
-		except OSError, e:
-			log.error('Error shutting down kismet_server')
+		self.run_flag = False
+		if self.process:
+			try:
+				os.kill(self.process.pid, signal.SIGHUP)
+			except OSError, e:
+				log.error('Error shutting down kismet_server')
 
 class Scanner:
 	def __init__(self):
@@ -149,18 +170,20 @@ class Scanner:
 			if self.gpscontext == None:
 				log.error('Unable to start GPS!')
 		
-		try:
-			self.kismet = Kismet()
-		except socket.error, e:
-			log.error('Cannot connect to Kismet')
-			return
+		if config.EnableWireless:
+			try:
+				self.kismet = Kismet()
+			except socket.error, e:
+				log.error('Cannot connect to Kismet')
+				return
+			thread = threading.Thread(target=self.kismet.loop)
+			thread.start()
 		self.running = True
-		thread = threading.Thread(target=self.kismet.loop)
-		thread.start()
 	
 	def stop(self):
 		if self.running:
-			self.kismet.shutdown()
-			if config.EnableGPS:
+			if self.kismet.run_flag:
+				self.kismet.shutdown()
+			if config.EnableGPS and self.gpscontext != None:
 				gpsbt.stop(self.gpscontext)
 		self.running = False

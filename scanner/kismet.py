@@ -2,10 +2,12 @@ import re
 
 separator = '\001'
 
+### Protocol definitions ###
 NETWORK = (
 	'bssid', 'type', 'ssid',
 	#'beaconinfo',
-	'llcpackets', 'datapackets', 'cryptpackets', 'weakpackets', 'channel', 'wep',
+	'llcpackets', 'datapackets', 'cryptpackets', 'weakpackets', 'channel',
+	'wep','cloaked',
 	#'firsttime', 'lasttime', 'atype', 'rangeip', 'gpsfixed',
 	#'minlat', 'minlon', 'minalt', 'minspd', 'maxlat', 'maxlon',
 	#'maxalt', 'maxspd', 'octets', 'cloaked', 'beaconrate',
@@ -39,6 +41,15 @@ GPS = (
 REMOVE = ('*')
 STATUS = ('*')
 
+### Misc enumerations ###
+NETWORK_TYPE = {
+	'0': 'AP',	# access point
+	'1': 'Adhoc',
+	'2': 'Probe',
+	'3': 'Turbocell',
+	'4':'Data'
+}
+
 def parse(definitions, data, store=None):
 	result = store and store or {}
 	index = 0
@@ -71,3 +82,42 @@ def parse(definitions, data, store=None):
 		
 	#print result
 	return result
+
+def parse_wep(code):
+	wepstr = ''
+	if code == 0:
+		return 'None'
+	if code & 0x10000:
+		wepstr += 'CCMP '
+	if code & 0x8000:
+		wepstr += 'PPTP '
+	if code & 0x4000:
+		wep -= 8192
+	if code & 0x2000:
+		wepstr += 'PEAP '
+	if code & 0x1000:
+		wepstr += 'TLS '
+	if code & 0x800:
+		wepstr += 'TTLS '
+	if code & 0x400:
+		wepstr += 'LEAP '
+	if code & 0x200:
+		wepstr += 'AES/CCM '
+	if code & 0x100:
+		wepstr += 'AES/OCB '
+	if code & 0x80:
+		wepstr += 'PSK '
+	if code & 0x40:
+		wepstr += 'WPA '
+	if code & 0x20:
+		wepstr += 'TKIP '
+	if code & 0x10:
+		wepstr += 'WEP104 '
+	if code & 0x8:
+		wepstr += 'WEP40 '
+	if code & 0x4:
+		wepstr += 'Layer 3 '
+	if code & 0x2:
+		wepstr += 'WEP '
+		
+	return wepstr

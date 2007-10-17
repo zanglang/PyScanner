@@ -3,6 +3,9 @@ Scanner configuration file
 version 0.1 - Jerry Chong <zanglang@gmail.com>
 """
 
+# Enable logging messages
+EnableLogging = True
+
 # Write debug messages
 LogDebug = True
 
@@ -21,5 +24,10 @@ MapsPath = '.gmaps.db'
 # GPS device address for GPSd
 GpsdAddress = '/dev/rfcomm0'
 
+#### Development Flags (do not change unless necessary!) #####
+
 # Use Hildon bindings (for Maemo)
 EnableHildon = True
+
+# Execute Kismet process
+ExecuteKismet = True
