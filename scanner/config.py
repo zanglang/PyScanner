@@ -24,7 +24,10 @@ MapsPath = '.gmaps.db'
 # GPS device address for GPSd
 GpsdAddress = '/dev/rfcomm0'
 
-#### Development Flags (do not change unless necessary!) #####
+#### Development flags (do not change unless necessary!) #####
+
+# Kismet path
+KismetPath = '/var/log/kismet'
 
 # Use Hildon bindings (for Maemo)
 EnableHildon = True

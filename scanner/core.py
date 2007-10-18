@@ -5,11 +5,8 @@ version 0.1 - Jerry Chong <zanglang@gmail.com>
 
 import os, re, signal, socket, subprocess, sys, time, threading
 import config, gui, kismet, log
-try:
+if config.EnableGPS:
 	import gpsbt
-	config.EnableGPS = True
-except ImportError:
-	config.EnableGPS = False
 
 pattern = re.compile('\*(.*): (.*)')
 networks = {}
@@ -23,10 +20,11 @@ class Kismet:
 			'ALERT': self.response_alert,
 			'REMOVE': self.response_remove,
 			'CARD': self.response_card,
+			'ERROR': self.response_error,
 			## Unimplemented yet/uninteresting
 			'PROTOCOLS': self.response_noop,
 			'CLIENT': self.response_noop,
-			'STATUS': self.response_noop,			
+			'STATUS': self.response_noop,
 			'TIME': self.response_noop,
 			'GPS': self.response_noop,
 			'INFO': self.response_noop
@@ -34,13 +32,12 @@ class Kismet:
 		
 		self.run_flag = True
 		# Check if we need to spawn kismet server
-		if config.ExecuteKismet and sys.platform != 'win32': 
+		if config.ExecuteKismet and sys.platform != 'win32':
 			self.process = subprocess.Popen('kismet_server')
 			time.sleep(5)
 			# TODO: add progress bar
 		else:
 			self.process = None
-		
 		log.write('Started kismet server')
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.connect(('localhost', 2501))
@@ -72,34 +69,8 @@ class Kismet:
 		print data
 		
 	def response_network(self, data):
-		network = kismet.parse(kismet.NETWORK, data)
-		
-		model = gui.window.widgets.get_widget('treeView1').get_model()
-		bssid = network['bssid']
-		if networks.has_key(bssid):
-			iter = model.get_iter(networks[bssid])
-		else:
-			iter = model.insert_before(None, None)
-			networks[bssid] = model.get_path(iter)
-			
 		gui.unlock()
-		model.set_value(iter, 0, network)
-		model.set_value(iter, 1, network['ssid'])
-		# Network type
-		network['typestr'] = kismet.NETWORK_TYPE.get(network['type'], '?')
-		model.set_value(iter, 2, network['typestr'])
-		model.set_value(iter, 3, network['channel'])
-		# WEP
-		try:
-			code = int(network['wep'])
-		except ValueError:
-			code = 0
-		network['wepstr'] = kismet.parse_wep(code)
-		model.set_value(iter, 4, code > 0 and 'Y' or 'N')
-		# number of packets
-		network['packets'] = int(network['llcpackets']) + int(network['datapackets']) + \
-				int(network['cryptpackets'])
-		model.set_value(iter, 5, network['packets'])
+		gui.window.add_network(kismet.parse(kismet.NETWORK, data))
 		gui.lock()
 		
 	def response_card(self, data):
@@ -119,6 +90,9 @@ class Kismet:
 		
 	def response_remove(self, data):
 		print 'REMOVE ' + data
+		
+	def response_error(self, data):
+		print 'ERROR ' + data
 	
 	def response_noop(self, data):
 		pass
@@ -173,7 +147,7 @@ class Scanner:
 		if config.EnableWireless:
 			try:
 				self.kismet = Kismet()
-			except socket.error, e:
+			except socket.error:
 				log.error('Cannot connect to Kismet')
 				return
 			thread = threading.Thread(target=self.kismet.loop)
