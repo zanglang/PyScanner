@@ -90,6 +90,8 @@ def unit2tilepixel(unit, zoom):
 	return (tile, (pixel - pixel2))
 
 def latlon2tilepixel(lat, lon, zoom):
+	"""Returns a tuple containing the corresponding tiles and pixel offset
+		tuples, given the latitude, longitude, and zoom level"""
 	unit = latlon2unit(lat, lon)
 	tilex, pixelx = unit2tilepixel(unit[0], zoom)
 	tiley, pixely = unit2tilepixel(unit[1], zoom)
@@ -104,13 +106,18 @@ class PyMapper:
 		pygame.init()
 		self.tileCache = TileCache()
 		
+		# Fix starting coordinates to Brisbane, Australia
 		#self.units = latlon2unit(45.547717, -73.55484) # position in google units
 		self.units = latlon2unit(-27.493210, 153.003387)
 		self.zoom = DEFAULT_ZOOM # current zoom level (0-16)
 		
+		# Draw as decorated window
 		#self.window = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
 		self.window = pygame.display.set_mode((800, 480))
 		self.clock = pygame.time.Clock()
+		
+		#
+		self.images = []
 		
 	def shutdown(self):
 		self.tileCache.shutdown()
@@ -159,15 +166,36 @@ class PyMapper:
 		for i in range((h * 2 + 1) * (v * 2 + 1)):
 			screen.blit(images.pop(), pos.pop())
 			
-		destx = (screenSize[0] / 2 - pixelx) + (60621 - tilex) * 256
-		desty = (screenSize[1] / 2 - pixely) + (37976 - tiley) * 256
-		screen.blit(pygame.image.load('final.png'), (destx, desty))
+		# Check for hooked images
+		for image in self.images:
+			# skip image if zoom level is different
+			if image['zoom'] != self.zoom:
+				continue
+			# calculate absolute position onscreen to draw image
+			x = (screenSize[0] / 2 - pixelx) + (image['x'] - tilex) * 256
+			y = (screenSize[1] / 2 - pixely) + (image['y'] - tiley) * 256
+			screen.blit(pygame.image.load(image['file']), (x, y))
 			
 		# draw our position on the screen
 		pygame.draw.circle(screen, (255, 0, 0), (screenSize[0] / 2, screenSize[1] / 2), 2)
 		
 		# we're using double buffering
 		pygame.display.flip()
+		
+	def add_image(self, file, tilex, tiley, zoom):
+		"""Hook the image onto fixed tiles on the map.
+			:param file: Path to image file
+			:param tilex: X coordinate in tiles to attach
+			:param tiley: Y coordinate in tiles to attach
+			:param zoom: The zoom level to display. If the zoom level is not
+				the same as 'zoom', added images will be skipped."""
+		image = {
+				'x': tilex,
+				'y': tiley,
+				'zoom': zoom,
+				'file': file
+		}
+		self.images.append(image)
 		
 	def doInput(self, events):
 		for event in events:
@@ -228,5 +256,7 @@ class PyMapper:
 	 
 if __name__ == '__main__':
 	mapper = PyMapper()
+	# Hook image
+	mapper.add_image('final.png', 60621, 37976, DEFAULT_ZOOM)
 	mapper.run()
 	
