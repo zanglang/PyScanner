@@ -44,6 +44,7 @@ MAX_ZOOM defines the largest map zoom level we will download.
 (MAX_ZOOM - 1) is the largest map zoom level that the user can zoom to.
 """
 MAX_ZOOM = 16
+DEFAULT_ZOOM = 1
 MERCATOR_SPAN = -6.28318377773622
 MERCATOR_TOP = 3.14159188886811
 TILE_SIZE_PIXELS = 256
@@ -87,6 +88,12 @@ def unit2tilepixel(unit, zoom):
 	pixel2 = ((unit2) >> zoom) # pixels for the top-left corner of the tile
 	
 	return (tile, (pixel - pixel2))
+
+def latlon2tilepixel(lat, lon, zoom):
+	unit = latlon2unit(lat, lon)
+	tilex, pixelx = unit2tilepixel(unit[0], zoom)
+	tiley, pixely = unit2tilepixel(unit[1], zoom)
+	return (tilex, tiley), (pixelx, pixely)
 	
 def maxtiles(zoom):
 	pass
@@ -99,7 +106,7 @@ class PyMapper:
 		
 		#self.units = latlon2unit(45.547717, -73.55484) # position in google units
 		self.units = latlon2unit(-27.493210, 153.003387)
-		self.zoom = 3 # current zoom level (0-16)
+		self.zoom = DEFAULT_ZOOM # current zoom level (0-16)
 		
 		#self.window = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
 		self.window = pygame.display.set_mode((800, 480))
@@ -115,6 +122,9 @@ class PyMapper:
 		# our position in pixels on the center tile
 		tilex, pixelx = unit2tilepixel(self.units[0], self.zoom)
 		tiley, pixely = unit2tilepixel(self.units[1], self.zoom)
+		
+		#print 'tilex', tilex, 'tiley', tiley
+		#print 'pixelx', pixelx, 'pixely', pixely
 		
 		screenSize = (800, 480)
 		
@@ -149,7 +159,9 @@ class PyMapper:
 		for i in range((h * 2 + 1) * (v * 2 + 1)):
 			screen.blit(images.pop(), pos.pop())
 			
-		screen.blit(pygame.image.load('final.png'), (0,0))
+		destx = (screenSize[0] / 2 - pixelx) + (60621 - tilex) * 256
+		desty = (screenSize[1] / 2 - pixely) + (37976 - tiley) * 256
+		screen.blit(pygame.image.load('final.png'), (destx, desty))
 			
 		# draw our position on the screen
 		pygame.draw.circle(screen, (255, 0, 0), (screenSize[0] / 2, screenSize[1] / 2), 2)
