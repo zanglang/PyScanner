@@ -23,7 +23,7 @@ import pygame, urllib, threading, random, sqlite3
 
 #PROXIES = {'http': 'http://fastweb.bell.ca:8083/'}
 PROXIES = {}
-DB_PATH = '.gmaps.db'
+DB_PATH = '.gmaps.db' # removed hardcoded dependency for memory card (Jerry])
 
 class TileCache:
 	def __init__(self):

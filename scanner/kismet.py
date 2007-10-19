@@ -1,8 +1,14 @@
+__doc__ = """
+PyScanner kismet module
+version 0.1 - Jerry Chong <zanglang@gmail.com>
+"""
+
 import os, time
 
+# Protocol separator
 separator = '\001'
 
-### Protocol definitions ###
+##### Protocol definitions #####
 NETWORK = (
 	'bssid', 'type', 'ssid',
 	#'beaconinfo',
@@ -44,33 +50,50 @@ STATUS = ('*')
 ### Misc enumerations ###
 NETWORK_TYPE = {
 	'0': 'AP',	# access point
-	'1': 'Adhoc',
+	'1': 'Ad-hoc',
 	'2': 'Probe',
 	'3': 'Turbocell',
 	'4': 'Data'
 }
 
 def parse(definitions, data, store=None):
+	""" Main function for parsing kismet's client/server protocol
+		:param definitions: Definitions dictionary to decode the data, e.g.
+			NETWORK and CARD defined in this module.
+		:param store: Storage table to use (optional)"""
+	# check if we are provided with a data store
 	result = store and store or {}
 	index = 0
+	# kismet entries with spaces are enclosed in \001. Check if we need to
+	# continue reading to construct a string
 	continuous = False
 	buffer = ''
+	# split line into chunks
 	for datum in data.split(' '):
+		# Check separator counts. If count = 1, e.g. \001Start... or ...end\001
+		# check if we were doing a continued read. Otherwise, be prepared to
+		# read more chunks so we can reconstruct it.
 		sepcount = datum.count(separator)
 		if sepcount == 2:
+			# 2 separators = self contained string. We simply need to trim them
 			buffer = datum + ' '
 		elif sepcount == 1:
 			buffer += datum + ' '
 			if continuous:
+				# This should be the last chunk
 				continuous = False
 			else:
 				continuous = True
 				continue
 		elif continuous:
+			# No separators to end the string yet
 			buffer += datum + ' '
 			continue
 		else:
+			# separators not needed
 			buffer = datum
+		# Try to read the corresponding key from the definitions array.
+		# Once found, use it to store our new string
 		try:
 			key = definitions[index]
 		except IndexError:
@@ -78,12 +101,14 @@ def parse(definitions, data, store=None):
 			break
 		result[key] = buffer.replace(separator, '')
 		buffer = ''
+		# move on to next string
 		index += 1
 		
 	#print result
 	return result
 
 def parse_wep(code):
+	""" Converts a kismet code to readable string form """
 	wepstr = ''
 	if code == 0:
 		return 'None'
@@ -123,6 +148,7 @@ def parse_wep(code):
 	return wepstr
 
 def parse_ssid_map(filename):
+	""" Parse kismet's ssid_map file """
 	f = open(filename)
 	list = None
 	try:
@@ -132,6 +158,7 @@ def parse_ssid_map(filename):
 	return list
 
 def parse_csv(filename):
+	""" Parse kismet's network logs in a comma-delimited text file """
 	f = open(filename)
 	networks = []
 	definitions = f.readline()
@@ -139,6 +166,7 @@ def parse_csv(filename):
 	# format than their client protocol
 	definitions = definitions.replace('NetType','type')
 	definitions = definitions.replace('ESSID','ssid')
+	definitions = definitions.replace('Encryption','wep')
 	definitions = definitions.replace('Encryption','wep')
 	definitions = definitions[:-2]
 	definitions = definitions.lower().split(';')
@@ -158,8 +186,9 @@ def parse_csv(filename):
 	
 	f.close()
 	return networks
-		
+	
 def load_csv(path):
+	""" Look for kismet's network logs in path and parse them """
 	networks = []
 	for root, dirs, filenames in os.walk(path):
 		for file in filenames:

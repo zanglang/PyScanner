@@ -4,8 +4,8 @@
 <glade-interface>
 
 <widget class="GtkWindow" id="MainWindow">
-  <property name="width_request">760</property>
-  <property name="height_request">400</property>
+  <property name="width_request">700</property>
+  <property name="height_request">350</property>
   <property name="visible">True</property>
   <property name="title" translatable="yes">PyScanner</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
@@ -22,6 +22,7 @@
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
   <signal name="destroy" handler="on_MainWindow_destroy" last_modification_time="Sun, 14 Oct 2007 07:36:49 GMT"/>
+  <signal name="key_press_event" handler="on_MainWindow_key_press_event" last_modification_time="Thu, 18 Oct 2007 21:22:43 GMT"/>
 
   <child>
     <widget class="GtkVBox" id="vbox3">
@@ -43,7 +44,7 @@
 	      <signal name="activate" handler="on_menuStart_activate" last_modification_time="Sun, 14 Oct 2007 09:41:45 GMT"/>
 
 	      <child internal-child="image">
-		<widget class="GtkImage" id="image15">
+		<widget class="GtkImage" id="image18">
 		  <property name="visible">True</property>
 		  <property name="stock">gtk-network</property>
 		  <property name="icon_size">1</property>
@@ -106,27 +107,6 @@
 		      <property name="visible">True</property>
 		    </widget>
 		  </child>
-
-		  <child>
-		    <widget class="GtkImageMenuItem" id="menuLoad">
-		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Load Previous _Entries</property>
-		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_menuLoad_activate" last_modification_time="Thu, 18 Oct 2007 02:40:29 GMT"/>
-
-		      <child internal-child="image">
-			<widget class="GtkImage" id="image16">
-			  <property name="visible">True</property>
-			  <property name="stock">gtk-floppy</property>
-			  <property name="icon_size">1</property>
-			  <property name="xalign">0.5</property>
-			  <property name="yalign">0.5</property>
-			  <property name="xpad">0</property>
-			  <property name="ypad">0</property>
-			</widget>
-		      </child>
-		    </widget>
-		  </child>
 		</widget>
 	      </child>
 	    </widget>
@@ -140,7 +120,7 @@
 	      <signal name="activate" handler="on_menuAnalyze_activate" last_modification_time="Wed, 17 Oct 2007 11:13:45 GMT"/>
 
 	      <child internal-child="image">
-		<widget class="GtkImage" id="image17">
+		<widget class="GtkImage" id="image19">
 		  <property name="visible">True</property>
 		  <property name="stock">gtk-zoom-fit</property>
 		  <property name="icon_size">1</property>
@@ -148,6 +128,50 @@
 		  <property name="yalign">0.5</property>
 		  <property name="xpad">0</property>
 		  <property name="ypad">0</property>
+		</widget>
+	      </child>
+
+	      <child>
+		<widget class="GtkMenu" id="menuAnalyze_menu">
+
+		  <child>
+		    <widget class="GtkImageMenuItem" id="menuLoad">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Load Previous _Entries</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="on_menuLoad_activate" last_modification_time="Thu, 18 Oct 2007 02:40:29 GMT"/>
+
+		      <child internal-child="image">
+			<widget class="GtkImage" id="image20">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-floppy</property>
+			  <property name="icon_size">1</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkMenuItem" id="menuPcap">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Read _Pcap Files</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="on_menuPcap_activate" last_modification_time="Thu, 18 Oct 2007 21:41:27 GMT"/>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkMenuItem" id="menuAircrack">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Launch Aircrack</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="on_menuAircrack_activate" last_modification_time="Thu, 18 Oct 2007 21:41:27 GMT"/>
+		    </widget>
+		  </child>
 		</widget>
 	      </child>
 	    </widget>
@@ -1347,7 +1371,7 @@ Python project</property>
       <signal name="activate" handler="on_menuLock_activate" last_modification_time="Wed, 17 Oct 2007 13:41:19 GMT"/>
 
       <child internal-child="image">
-	<widget class="GtkImage" id="image14">
+	<widget class="GtkImage" id="image21">
 	  <property name="visible">True</property>
 	  <property name="stock">gtk-dialog-authentication</property>
 	  <property name="icon_size">1</property>
@@ -1357,6 +1381,30 @@ Python project</property>
 	  <property name="ypad">0</property>
 	</widget>
       </child>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="separator5">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="menuDeauth">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Deauthenticate Flood</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_menuDeauth_activate" last_modification_time="Thu, 18 Oct 2007 21:42:20 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="menuAircrack2">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Launch Aircrack</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_menuAircrack2_activate" last_modification_time="Thu, 18 Oct 2007 21:42:20 GMT"/>
     </widget>
   </child>
 </widget>

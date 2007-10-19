@@ -19,8 +19,11 @@
 #
 #PyMapper uses code from maemo-mapper
 
-import math, pygame, sys
+# Several changes have been made to this file by
+# Jerry Chong <zanglang@gmail.com>, and will be marked clearly as such.
 
+import math, pygame, sys
+import scanner
 from TileServer import TileCache
 
 K_MIDDLE = 13
@@ -91,7 +94,7 @@ def unit2tilepixel(unit, zoom):
 
 def latlon2tilepixel(lat, lon, zoom):
 	"""Returns a tuple containing the corresponding tiles and pixel offset
-		tuples, given the latitude, longitude, and zoom level"""
+		tuples, given the latitude, longitude, and zoom level (Jerry])"""
 	unit = latlon2unit(lat, lon)
 	tilex, pixelx = unit2tilepixel(unit[0], zoom)
 	tiley, pixely = unit2tilepixel(unit[1], zoom)
@@ -106,17 +109,19 @@ class PyMapper:
 		pygame.init()
 		self.tileCache = TileCache()
 		
-		# Fix starting coordinates to Brisbane, Australia
+		# Fix starting coordinates to Brisbane, Australia (Jerry])
 		#self.units = latlon2unit(45.547717, -73.55484) # position in google units
 		self.units = latlon2unit(-27.493210, 153.003387)
 		self.zoom = DEFAULT_ZOOM # current zoom level (0-16)
 		
-		# Draw as decorated window
-		#self.window = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
-		self.window = pygame.display.set_mode((800, 480))
+		# Draw as decorated window (Jerry])
+		if scanner.config.EnableHildon:
+			self.window = pygame.display.set_mode((800, 480), pygame.FULLSCREEN)
+		else:
+			self.window = pygame.display.set_mode((800, 480))
 		self.clock = pygame.time.Clock()
 		
-		#
+		# image store (Jerry])
 		self.images = []
 		
 	def shutdown(self):
@@ -166,7 +171,7 @@ class PyMapper:
 		for i in range((h * 2 + 1) * (v * 2 + 1)):
 			screen.blit(images.pop(), pos.pop())
 			
-		# Check for hooked images
+		# Check for hooked images (Jerry])
 		for image in self.images:
 			# skip image if zoom level is different
 			if image['zoom'] != self.zoom:
@@ -183,7 +188,7 @@ class PyMapper:
 		pygame.display.flip()
 		
 	def add_image(self, file, tilex, tiley, zoom):
-		"""Hook the image onto fixed tiles on the map.
+		"""Hook the image onto fixed tiles on the map. (Jerry])
 			:param file: Path to image file
 			:param tilex: X coordinate in tiles to attach
 			:param tiley: Y coordinate in tiles to attach
@@ -256,7 +261,7 @@ class PyMapper:
 	 
 if __name__ == '__main__':
 	mapper = PyMapper()
-	# Hook image
+	# Hook image (Jerry])
 	mapper.add_image('final.png', 60621, 37976, DEFAULT_ZOOM)
 	mapper.run()
 	

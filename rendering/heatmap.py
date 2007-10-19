@@ -1,3 +1,9 @@
+__doc__ = """
+PyScanner heatmap renderer
+Originally by David Pardo, ported and rewritten for Python/ImageMagick
+version 0.1 - Jerry Chong <zanglang@gmail.com>
+"""
+
 import math, os, subprocess, sys, tempfile
 import GoogleMaps
 

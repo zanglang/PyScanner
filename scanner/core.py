@@ -8,11 +8,13 @@ import config, gui, kismet, log
 if config.EnableGPS:
 	import gpsbt
 
+# kismet client server protocol regex
 pattern = re.compile('\*(.*): (.*)')
 networks = {}
 card = None
 
 class Kismet:
+	""" Main kismet server controller """
 	def __init__(self):
 		self.functions = {
 			'KISMET': self.response_kismet,
@@ -34,11 +36,16 @@ class Kismet:
 		# Check if we need to spawn kismet server
 		if config.ExecuteKismet and sys.platform != 'win32':
 			self.process = subprocess.Popen('kismet_server')
+			# exit critical region first
+			gui.lock()
 			time.sleep(5)
+			gui.unlock()
 			# TODO: add progress bar
 		else:
 			self.process = None
+			
 		log.write('Started kismet server')
+		# connect to server
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.connect(('localhost', 2501))
 		self.sockfile = self.socket.makefile("rw")
@@ -47,6 +54,7 @@ class Kismet:
 		log.write_status('Connected to kismet instance')
 		
 	def loop(self):
+		""" Go into a loop and read from kismet """
 		global pattern
 		while self.run_flag:
 			try:
@@ -62,6 +70,7 @@ class Kismet:
 				break
 		
 	def response_info(self, data):
+		""" INFO command """
 		print data
 	
 	def response_kismet(self, data):
@@ -69,11 +78,13 @@ class Kismet:
 		print data
 		
 	def response_network(self, data):
+		""" NETWORK information from kismet """
 		gui.unlock()
 		gui.window.add_network(kismet.parse(kismet.NETWORK, data))
 		gui.lock()
 		
 	def response_card(self, data):
+		""" Current wireless CARD information """
 		global card
 		card = kismet.parse(kismet.CARD, data)
 		gui.unlock()
@@ -82,22 +93,28 @@ class Kismet:
 		gui.lock()
 		
 	def response_alert(self, data):
+		""" ALERT received from kismet """
 		alert = kismet.parse(kismet.ALERT, data)
 		gui.unlock()
+		# better write it to statusbar
 		log.write('Alert: ' + alert['text'])
 		log.write_status('Alert: ' + alert['text'])
 		gui.lock()
 		
 	def response_remove(self, data):
+		""" REMOVE a network entry from collection. Unhandled for now """
 		print 'REMOVE ' + data
 		
 	def response_error(self, data):
+		""" kismet has detected an ERROR in protocol """
 		print 'ERROR ' + data
 	
 	def response_noop(self, data):
+		""" Do nothing """
 		pass
 	
 	def command_initialize(self):
+		""" Set up connection to kismet and send command options """
 		self.writeline('ENABLE', 'NETWORK ' + ','.join(kismet.NETWORK))
 		self.writeline('ENABLE', 'INFO ' + ','.join(kismet.INFO))
 		#self.writeline('ENABLE', 'CLIENT ' + ','.join(kismet.CLIENT))
@@ -108,6 +125,7 @@ class Kismet:
 		#self.writeline('ENABLE', 'STATUS ' + ','.join(kismet.STATUS))
 	
 	def readline(self):
+		""" Read a line of text from socket """
 		str = self.sockfile.readline()
 		if not str:
 			raise EOFError
@@ -118,12 +136,15 @@ class Kismet:
 		return str
 	
 	def writeline(self, command, options=None):
+		""" Write a command to kismet """
 		self.socket.send('!0 ' + command + ' ' + options + '\r\n')
 		
 	def shutdown(self):
+		""" Prepare to close kismet and cleanup """
 		self.sockfile.close()
 		self.socket.close()
 		self.run_flag = False
+		# kill kismet if possible
 		if self.process:
 			try:
 				os.kill(self.process.pid, signal.SIGHUP)
@@ -131,19 +152,23 @@ class Kismet:
 				log.error('Error shutting down kismet_server')
 
 class Scanner:
+	""" Generic scanner """
 	def __init__(self):
 		self.running = False
 		self.kismet = None
 	
 	def start(self):
+		""" Start running """
 		if self.running == True:
 			return
 		
+		# if we are using libGPS-Bluetooth
 		if config.EnableGPS:
 			self.gpscontext = gpsbt.start()
 			if self.gpscontext == None:
 				log.error('Unable to start GPS!')
 		
+		# If we are scanning on wifi
 		if config.EnableWireless:
 			try:
 				self.kismet = Kismet()
@@ -155,6 +180,7 @@ class Scanner:
 		self.running = True
 	
 	def stop(self):
+		""" Shutdown scanners """
 		if self.running:
 			if self.kismet.run_flag:
 				self.kismet.shutdown()
