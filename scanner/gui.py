@@ -45,8 +45,9 @@ class MainWindow:
 			"on_chkWireless_toggled" : self.chkWireless_toggled,
 			"on_menuBluetooth_activate" : self.chkBluetooth_toggled,
 			"on_chkBluetooth_toggled" : self.chkBluetooth_toggled,
-			"on_menuLoad_activate" : self.menuLoad_activate,
-			"on_menuAnalyze_activate" : self.menuAnalyze_activate,
+			"on_menuLoad_activate" : self.menuLoad_activate,			"on_menuPcap_activate" : self.menuPcap_activate,
+			"on_menuAircrack_activate" : self.menuAircrack_activate,
+			"on_menuVisualize_activate" : self.menuVisualize_activate,
 			"on_MainWindow_destroy" : self.menuQuit_activate,
 			"on_treeView_cursor_changed": self.treeView_changed,
 			"on_treeView_button_press_event": self.treeView_clicked,
@@ -206,14 +207,30 @@ class MainWindow:
 	
 	def menuLoad_activate(self, widget):
 		""" Load previous entries into treeview """
+		print config.KismetPath
 		for network in kismet.load_csv(config.KismetPath):
 			if networks.has_key(network['bssid']):
 				continue
 			self.add_network(network)
 			
-	def menuAnalyze_activate(self, widget):
-		# doesn't do anything yet
-		pass
+	def menuPcap_activate(self, widget):
+		import pcap
+		pcap.load_pcap()
+		
+	def menuAircrack_activate(self, widget):
+		os.system('x-terminal-emulator -e aircrack-ng Packets.dump')
+		
+	def menuVisualize_activate(self, widget):
+		from rendering import generate as heatmap, GoogleMaps
+		# generate heatmap
+		log.write_status('Start generating heatmap...')
+		points = heatmap.run()
+		log.write_status('Done! Starting mapper now.')
+		
+		# generate maps
+		maps = GoogleMaps.PyMapper()
+		maps.add_image('final.png', points.min_tilex, points.min_tiley, GoogleMaps.DEFAULT_ZOOM)
+		maps.run()
 	
 	def menuAbout_activate(self, widget):
 		self.widgets.get_widget('AboutDialog').show()

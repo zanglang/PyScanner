@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 __doc__ = """
 Scanner main module 
 version 0.1 - Jerry Chong <zanglang@gmail.com>

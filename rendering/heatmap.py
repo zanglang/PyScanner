@@ -12,7 +12,7 @@ import GoogleMaps
 if sys.platform == 'win32':
 	CONVERT = 'c:\\Program Files\\ImageMagick-6.3.6-Q16\\convert.exe '
 else:
-	CONVERT = 'convert'
+	CONVERT = '/usr/bin/convert'
 
 class Points:
 	"""Class for keeping track of points on a heatmap"""
@@ -59,8 +59,9 @@ class Renderer:
 	def convert(self, arguments):
 		"""Run ImageMagick convert with given arguments, and block until it
 			finishes"""
-		process = subprocess.Popen(CONVERT + ' ' + arguments)
-		process.wait()
+		#process = subprocess.Popen((CONVERT + ' ' + arguments).split())
+		#process.wait()
+		os.system(CONVERT + ' ' + arguments)
 
 	def normalize_spots(self):
 		"""Apply intensity settings to normalize spots"""

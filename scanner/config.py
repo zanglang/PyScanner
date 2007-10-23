@@ -21,6 +21,9 @@ EnableGPS = False
 # Google maps database path
 MapsPath = '.gmaps.db'
 
+# Have Scapy
+EnableScapy = True
+
 # GPS device address for GPSd
 GpsdAddress = '/dev/rfcomm0'
 
